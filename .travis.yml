@@ -8,15 +8,19 @@ php:
 sudo: false
 
 matrix:
-    fast_finish: true
-    allow_failures:
-        php: hhvm
+  fast_finish: true
+  allow_failures:
+    php: hhvm
 
 before_install:
-    - travis_retry composer self-update
+  - travis_retry composer self-update
 
 install:
-    - travis_retry composer install -o --no-interaction --prefer-dist
+  - travis_retry composer install -o --no-interaction --prefer-dist
 
 script:
-    - vendor/bin/phpunit --coverage-text --coverage-clover=coverage.clover
+  - vendor/bin/phpunit --coverage-text --coverage-clover=coverage.clover
+
+after_success:
+  - if [ "$TRAVIS_PHP_VERSION" != "7.0" ]; then wget https://scrutinizer-ci.com/ocular.phar; fi
+  - if [ "$TRAVIS_PHP_VERSION" != "7.0" ]; then php ocular.phar code-coverage:upload --format=php-clover coverage.clover; fi
