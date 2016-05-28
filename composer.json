@@ -2,6 +2,7 @@
   "name": "softius/resources-resolver",
   "type": "library",
   "description": "Resolve file paths and methods",
+  "license": "MIT",
   "keywords": [
     "softius",
     "resources-resolver"
