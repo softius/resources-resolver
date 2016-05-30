@@ -2,20 +2,21 @@
 
 namespace Softius\ResourcesResolver;
 
+use Interop\Container\ContainerInterface;
+
 /**
  * Class DefaultCallableStrategy
  * @package Softius\ResourcesResolver
  */
 class DefaultCallableStrategy implements ResolvableInterface
 {
-	const DEFAULT_NAMESPACE_SEPARATOR = '\\';
 	const DEFAULT_METHOD_SEPARATOR = '::';
 
-	/**
-	 * @var null|string
+    /**
+     * @var ContainerInterface
      */
+    private $container;
 
-	private $namespace_separator;
 	/**
 	 * @var null|string
      */
@@ -23,11 +24,11 @@ class DefaultCallableStrategy implements ResolvableInterface
 
 	/**
 	 * DefaultCallableStrategy constructor.
-	 * @param string $namespace_separator
+     * @param \Interop\Container\ContainerInterface $container
 	 * @param string $method_separator
      */
-	public function __construct($namespace_separator = null, $method_separator = null) {
-		$this->namespace_separator = ($namespace_separator === null) ? self::DEFAULT_NAMESPACE_SEPARATOR : $namespace_separator;
+	public function __construct(ContainerInterface $container = null, $method_separator = null) {
+        $this->container = $container;
 		$this->method_separator = ($method_separator === null) ? self::DEFAULT_METHOD_SEPARATOR : $method_separator;
 	}
 
@@ -53,6 +54,25 @@ class DefaultCallableStrategy implements ResolvableInterface
 			$method = substr($in, $pos + strlen($this->method_separator));
 		}
 
+		if ($this->container !== null && $this->container->has($class)) {
+			$class = $this->container->get($class);
+		}
+
 		return [$class, $method];
+	}
+
+	/**
+	 * @param $in
+	 * @return array
+	 * @throws \Exception
+	 */
+	public function resolveSafe($in)
+	{
+		$callable = $this->resolve($in);
+		if (is_callable($callable)) {
+			return $callable;
+		}
+
+		throw new \Exception(sprintf('Could not resolve %s to a callable', $in));
 	}
 }
