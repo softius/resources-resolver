@@ -25,4 +25,12 @@ class CallableResolver implements StrategyAwareInterface
 	public function resolve($in) {
         return $this->getStrategy()->resolve($in);
 	}
+
+	/**
+	 * @param string $in
+	 * @return mixed
+	 */
+	public function resolveSafe($in) {
+		return $this->getStrategy()->resolveSafe($in);
+	}
 }
