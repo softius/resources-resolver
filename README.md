@@ -23,13 +23,14 @@ In short the DefaultCallableStrategy resolves the following inputs to the associ
 
 * `App\GreetingController::helloAction` to `[instance of App\GreetingController, 'helloAction']`
 * `::helloAction` to `[instance of calling class, 'helloAction']`
-* ``App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
+* `parent::helloAction` to `[parent instance of calling class, 'helloAction']`
+* `App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
 
 ## Usage
 
 ### Resolve a non - static method
 
-```
+``` PHP
 use League\Container\Container;
 use Softius\ResourcesResolver\CallableResolver;
 
@@ -45,7 +46,7 @@ $callable = $resolver->resolve('App\SomeClass::someMethod');;
 ### Resolve a method using alias for class
 
 
-```
+``` PHP
 use League\Container\Container;
 use Softius\ResourcesResolver\CallableResolver;
 
@@ -60,13 +61,42 @@ $callable = $resolver->resolve('FooClass::someMethod');;
 
 ### Resolve a static method
 
-```
+``` PHP
 use Softius\ResourcesResolver\CallableResolver;
 
 $resolver = new CallableResolver();
-$resolver->setStrategy();
 
 $callable = $resolver->resolve('App\SomeClass::someStaticMethod');
+```
+
+### Resolve using parent or self
+
+``` PHP
+use Softius\ResourcesResolver\CallableResolver;
+
+class A
+{
+    public function hi()
+    {
+        echo 'A: Hi!';
+    }
+}
+
+class B extends A
+{
+    public function hi()
+    {
+        echo 'B: Hi!';
+    }
+    
+    public function test()
+    {
+        $resolver = new CallableResolver();
+        $callable = $resolver->resolve('::hi');         // returns [B, hi]
+        $callable = $resolver->resolve('self::hi');     // returns [B, hi]
+        $callable = $resolver->resolve('parent::hi');   // returns [A, hi]
+    }   
+}
 ```
 
 ## Testing
