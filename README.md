@@ -15,6 +15,60 @@ Via Composer
 $ composer require softius/resources-resolver
 ```
 
+## Strategies
+
+Currently there is only one Strategy available, DefaultCallableStrategy.
+
+In short the DefaultCallableStrategy resolves the following inputs to the associated callable. This works for static and non-static methods as well and it relies heavily for a Container to be provided at the selected Strategy.
+
+* `App\GreetingController::helloAction` to `[instance of App\GreetingController, 'helloAction']`
+* `::helloAction` to `[instance of calling class, 'helloAction']`
+* ``App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
+
+## Usage
+
+### Resolve a non - static method
+
+```
+use League\Container\Container;
+use Softius\ResourcesResolver\CallableResolver;
+
+$container = new Container();
+$container->add('App\SomeClass');
+
+$resolver = new CallableResolver();
+$resolver->setStrategy(new DefaultCallableStrategy($container));
+
+$callable = $resolver->resolve('App\SomeClass::someMethod');;
+```
+
+### Resolve a method using alias for class
+
+
+```
+use League\Container\Container;
+use Softius\ResourcesResolver\CallableResolver;
+
+$container = new Container();
+$container->add('FooClass', 'App\SomeClass');
+
+$resolver = new CallableResolver();
+$resolver->setStrategy(new DefaultCallableStrategy($container));
+
+$callable = $resolver->resolve('FooClass::someMethod');;
+```
+
+### Resolve a static method
+
+```
+use Softius\ResourcesResolver\CallableResolver;
+
+$resolver = new CallableResolver();
+$resolver->setStrategy();
+
+$callable = $resolver->resolve('App\SomeClass::someStaticMethod');
+```
+
 ## Testing
 
 ``` bash
