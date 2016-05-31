@@ -47,14 +47,12 @@ class DefaultCallableStrategy implements ResolvableInterface
             throw new \Exception(sprintf('Method separator not found in %s', $in));
         }
 
-        if ($pos === 0) {
+        $class = substr($in, 0, $pos);
+        $method = substr($in, $pos + strlen($this->method_separator));
+        if ($pos === 0 || $class === 'parent' || $class === 'self') {
             // Use backtrace to find the calling Class
             $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-            $class = $trace[2]['class'];
-            $method = substr($in, $pos + strlen($this->method_separator));
-        } else {
-            $class = substr($in, 0, $pos);
-            $method = substr($in, $pos + strlen($this->method_separator));
+            $class = ($class === 'parent') ? get_parent_class($trace[2]['class']) : $trace[2]['class'];
         }
 
         if ($this->container !== null && $this->container->has($class)) {
