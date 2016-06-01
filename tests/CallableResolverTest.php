@@ -16,11 +16,23 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(is_callable($callable, true));
     }
 
-    public function testResolvesFromPartial()
+    public function testResolvesSelf()
     {
         $resolver = new CallableResolver;
         $callable = $resolver->resolve('::action');
         $this->assertEquals($callable, [__CLASS__, 'action']);
+        $this->assertTrue(is_callable($callable, true));
+
+        $callable = $resolver->resolve('self::action');
+        $this->assertEquals($callable, [__CLASS__, 'action']);
+        $this->assertTrue(is_callable($callable, true));
+    }
+
+    public function testResolvesFromParent()
+    {
+        $resolver = new CallableResolver;
+        $callable = $resolver->resolve('parent::action');
+        $this->assertEquals($callable, [get_parent_class(__CLASS__), 'action']);
         $this->assertTrue(is_callable($callable, true));
     }
 
@@ -52,7 +64,7 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
     {
         $resolver = new CallableResolver;
 
-        $callable = $resolver->resolve('Softius\ResourcesResolver\Test\Resource\SomeClass::someStaticMethod');
+        $callable = $resolver->resolveSafe('Softius\ResourcesResolver\Test\Resource\SomeClass::someStaticMethod');
         $this->assertTrue(is_callable($callable));
         $this->assertEquals($callable, ['Softius\ResourcesResolver\Test\Resource\SomeClass', 'someStaticMethod']);
     }
@@ -65,7 +77,7 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
         $resolver = new CallableResolver;
         $resolver->setStrategy(new DefaultCallableStrategy($container));
 
-        $callable = $resolver->resolve('SomeClass::someStaticMethod');
+        $callable = $resolver->resolveSafe('SomeClass::someStaticMethod');
         $this->assertTrue(is_callable($callable));
     }
 

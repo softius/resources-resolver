@@ -15,6 +15,90 @@ Via Composer
 $ composer require softius/resources-resolver
 ```
 
+## Strategies
+
+Currently there is only one Strategy available, DefaultCallableStrategy.
+
+In short the DefaultCallableStrategy resolves the following inputs to the associated callable. This works for static and non-static methods as well and it relies heavily for a Container to be provided at the selected Strategy.
+
+* `App\GreetingController::helloAction` to `[instance of App\GreetingController, 'helloAction']`
+* `::helloAction` to `[instance of calling class, 'helloAction']`
+* `parent::helloAction` to `[parent instance of calling class, 'helloAction']`
+* `App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
+
+## Usage
+
+### Resolve a non - static method
+
+``` PHP
+use League\Container\Container;
+use Softius\ResourcesResolver\CallableResolver;
+
+$container = new Container();
+$container->add('App\SomeClass');
+
+$resolver = new CallableResolver();
+$resolver->setStrategy(new DefaultCallableStrategy($container));
+
+$callable = $resolver->resolve('App\SomeClass::someMethod');;
+```
+
+### Resolve a method using alias for class
+
+
+``` PHP
+use League\Container\Container;
+use Softius\ResourcesResolver\CallableResolver;
+
+$container = new Container();
+$container->add('FooClass', 'App\SomeClass');
+
+$resolver = new CallableResolver();
+$resolver->setStrategy(new DefaultCallableStrategy($container));
+
+$callable = $resolver->resolve('FooClass::someMethod');;
+```
+
+### Resolve a static method
+
+``` PHP
+use Softius\ResourcesResolver\CallableResolver;
+
+$resolver = new CallableResolver();
+
+$callable = $resolver->resolve('App\SomeClass::someStaticMethod');
+```
+
+### Resolve using parent or self
+
+``` PHP
+use Softius\ResourcesResolver\CallableResolver;
+
+class A
+{
+    public function hi()
+    {
+        echo 'A: Hi!';
+    }
+}
+
+class B extends A
+{
+    public function hi()
+    {
+        echo 'B: Hi!';
+    }
+    
+    public function test()
+    {
+        $resolver = new CallableResolver();
+        $callable = $resolver->resolve('::hi');         // returns [B, hi]
+        $callable = $resolver->resolve('self::hi');     // returns [B, hi]
+        $callable = $resolver->resolve('parent::hi');   // returns [A, hi]
+    }   
+}
+```
+
 ## Testing
 
 ``` bash
