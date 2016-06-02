@@ -26,7 +26,7 @@ In short the DefaultCallableStrategy resolves the following inputs to the associ
 * `parent::helloAction` to `[parent instance of calling class, 'helloAction']`
 * `App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
 
-## Usage
+## Usage: Callable
 
 ### Resolve a non - static method
 
@@ -98,6 +98,56 @@ class B extends A
     }   
 }
 ```
+
+## Usage: Filename
+
+### Resolve a filename from templates directory
+
+``` PHP
+define('TEMPLATES_DIR', '...');
+
+use Softius\ResourcesResolver\FilenameResolver; 
+
+$resolver = new FilenameResolver(TEMPLATES_DIR); 
+$filename = $resolver->resolve('path/to/template.php');
+```
+
+It is also possible to omit the extension and specify a global extension for all files to be resolved, like below.
+
+``` PHP
+define('TEMPLATES_DIR', '...');
+
+use Softius\ResourcesResolver\FilenameResolver; 
+
+$resolver = new FilenameResolver(TEMPLATES_DIR); 
+$resolver->setExtension('php');
+$filename = $resolver->resolve('path/to/template');
+```
+
+Many frameworks don't use the directory separator to provide a consistent look across multiple OS. The following example uses '.' as the directory separator without file extensions
+
+``` PHP
+define('TEMPLATES_DIR', '...');
+
+use Softius\ResourcesResolver\FilenameResolver; 
+
+$resolver = new FilenameResolver(TEMPLATES_DIR, '.');
+$resolver->setExtension('php');
+$filename = $resolver->resolve('path.to.template');
+```
+
+### Resolve a filename from include path
+
+``` PHP
+define('TEMPLATES_DIR', '...');
+
+use Softius\ResourcesResolver\FilenameResolver; 
+
+$resolver = new FilenameResolver(TEMPLATES_DIR);
+$resolver->useIncludePath(true);
+$filename = $resolver->resolve('path/to/file.php');
+```
+
 
 ## Testing
 
