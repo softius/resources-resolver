@@ -2,7 +2,7 @@
 
 namespace Softius\ResourcesResolver;
 
-class FilenameResolver
+class FilenameResolver implements ResolvableInterface
 {
     const DEFAULT_DIRECTORY_SEPARATOR = DIRECTORY_SEPARATOR;
 
@@ -34,7 +34,7 @@ class FilenameResolver
      */
     public function __construct($directories = null, $directory_separator = null)
     {
-        $this->directory_separator = ($directory_separator === null) ? self::DEFAULT_DIRECTORY_SEPARATOR : $this->directory_separator;
+        $this->directory_separator = ($directory_separator === null) ? self::DEFAULT_DIRECTORY_SEPARATOR : $directory_separator;
 
         $this->dirs = [];
         if (is_string($directories)) {
@@ -87,6 +87,15 @@ class FilenameResolver
     {
         $partial_path = $in;
 
+        if ($this->directory_separator !== self::DEFAULT_DIRECTORY_SEPARATOR) {
+            $dir_name = pathinfo($partial_path, PATHINFO_DIRNAME);
+            $partial_path = str_replace($dir_name, str_replace($this->directory_separator, self::DEFAULT_DIRECTORY_SEPARATOR, $dir_name), $partial_path);
+        }
+
+        if (pathinfo($partial_path, PATHINFO_EXTENSION) == '' && !empty($this->extension)) {
+            $partial_path = $partial_path.'.'.$this->extension;
+        }
+
         $dirs = $this->dirs;
         if ($this->use_include_path) {
             $dirs = array_merge($dirs, explode(PATH_SEPARATOR, get_include_path()));
@@ -94,16 +103,11 @@ class FilenameResolver
 
         foreach ($dirs as $dir) {
             $path = $dir.DIRECTORY_SEPARATOR.$partial_path;
-            if ($this->extension !== null) {
-                $path = $path.'.'.$this->extension;
-            }
-
             if (file_exists($path)) {
                 return realpath($path);
             }
         }
 
-        // @todo throw an exception instead
         throw new \Exception(sprintf('Could not resolve %s to a filename', $in));
     }
 }

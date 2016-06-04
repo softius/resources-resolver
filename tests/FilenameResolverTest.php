@@ -34,7 +34,7 @@ class FilePathResolverTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($dirs[1].'Resource/file.txt', $filename);
     }
 
-    public function testResolversFromIncludePath()
+    public function testResolvesFromIncludePath()
     {
         $include_path = get_include_path();
         set_include_path($include_path.PATH_SEPARATOR.$this->lib_dir);
@@ -47,11 +47,31 @@ class FilePathResolverTest extends \PHPUnit_Framework_TestCase
         set_include_path($include_path);
     }
 
-    public function testResolvesWithoutExtension()
+    public function testResolvesExtension()
     {
         $resolver = new FilenameResolver($this->lib_dir);
         $resolver->setExtension(substr($this->file_txt, -3));
+
+        // Trim extension from filename
         $filename = $resolver->resolve(substr($this->file_txt, 0, -4));
+        $this->assertEquals($this->lib_dir.$this->file_txt, $filename);
+
+        // Provide extension
+        $filename = $resolver->resolve($this->file_txt);
+        $this->assertEquals($this->lib_dir.$this->file_txt, $filename);
+    }
+
+    public function testResolvesUsingDots()
+    {
+        $resolver = new FilenameResolver($this->lib_dir, '.');
+        $resolver->setExtension(substr($this->file_txt, -3));
+
+        // Trim extension from filename
+        $filename = $resolver->resolve(str_replace(DIRECTORY_SEPARATOR, '.', substr($this->file_txt, 0, -4)));
+        $this->assertEquals($this->lib_dir.$this->file_txt, $filename);
+
+        // Provide extension
+        $filename = $resolver->resolve($this->file_txt);
         $this->assertEquals($this->lib_dir.$this->file_txt, $filename);
     }
 
