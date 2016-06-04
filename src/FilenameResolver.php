@@ -63,6 +63,21 @@ class FilenameResolver implements ResolvableInterface
     }
 
     /**
+     * @param bool $merge
+     *
+     * @return array
+     */
+    public function getDirectories($merge = true)
+    {
+        $dirs = $this->dirs;
+        if ($merge && $this->use_include_path) {
+            $dirs = array_merge($dirs, explode(PATH_SEPARATOR, get_include_path()));
+        }
+
+        return $dirs;
+    }
+
+    /**
      * @param bool $use
      */
     public function useIncludePath($use)
@@ -79,30 +94,39 @@ class FilenameResolver implements ResolvableInterface
     }
 
     /**
+     * @param $filename
+     *
+     * @return mixed|string
+     */
+    protected function normalizeFilename($filename)
+    {
+        $normalized_filename = $filename;
+        if ($this->directory_separator !== self::DEFAULT_DIRECTORY_SEPARATOR) {
+            $dir_name = pathinfo($normalized_filename, PATHINFO_DIRNAME);
+            $normalized_filename = str_replace($dir_name, str_replace($this->directory_separator, self::DEFAULT_DIRECTORY_SEPARATOR, $dir_name), $normalized_filename);
+        }
+
+        if (pathinfo($normalized_filename, PATHINFO_EXTENSION) == '' && !empty($this->extension)) {
+            $normalized_filename = $normalized_filename.'.'.$this->extension;
+        }
+
+        return $normalized_filename;
+    }
+
+    /**
      * @param string $in
+     *
      * @return null|string
+     *
      * @throws \Exception
      */
     public function resolve($in)
     {
-        $partial_path = $in;
+        $filename = $in;
+        $filename = $this->normalizeFilename($filename);
 
-        if ($this->directory_separator !== self::DEFAULT_DIRECTORY_SEPARATOR) {
-            $dir_name = pathinfo($partial_path, PATHINFO_DIRNAME);
-            $partial_path = str_replace($dir_name, str_replace($this->directory_separator, self::DEFAULT_DIRECTORY_SEPARATOR, $dir_name), $partial_path);
-        }
-
-        if (pathinfo($partial_path, PATHINFO_EXTENSION) == '' && !empty($this->extension)) {
-            $partial_path = $partial_path.'.'.$this->extension;
-        }
-
-        $dirs = $this->dirs;
-        if ($this->use_include_path) {
-            $dirs = array_merge($dirs, explode(PATH_SEPARATOR, get_include_path()));
-        }
-
-        foreach ($dirs as $dir) {
-            $path = $dir.DIRECTORY_SEPARATOR.$partial_path;
+        foreach ($this->getDirectories() as $dir) {
+            $path = $dir.DIRECTORY_SEPARATOR.$filename;
             if (file_exists($path)) {
                 return realpath($path);
             }
