@@ -34,6 +34,25 @@ class CallableResolver implements ResolvableInterface
     }
 
     /**
+     * @param string $class
+     * @return string
+     */
+    protected function fillClass($class)
+    {
+        // Use backtrace to find the calling Class
+        if (empty($class) || $class === 'parent' || $class === 'self') {
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+            $class = ($class === 'parent') ? get_parent_class($trace[2]['class']) : $trace[2]['class'];
+        }
+
+        if ($this->container !== null && $this->container->has($class)) {
+            $class = $this->container->get($class);
+        }
+
+        return $class;
+    }
+
+    /**
      * @param string $in
      *
      * @return array
@@ -48,16 +67,8 @@ class CallableResolver implements ResolvableInterface
         }
 
         $class = substr($in, 0, $pos);
+        $class = $this->fillClass($class);
         $method = substr($in, $pos + strlen($this->method_separator));
-        if ($pos === 0 || $class === 'parent' || $class === 'self') {
-            // Use backtrace to find the calling Class
-            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-            $class = ($class === 'parent') ? get_parent_class($trace[1]['class']) : $trace[1]['class'];
-        }
-
-        if ($this->container !== null && $this->container->has($class)) {
-            $class = $this->container->get($class);
-        }
 
         return [$class, $method];
     }
