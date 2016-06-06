@@ -15,18 +15,21 @@ Via Composer
 $ composer require softius/resources-resolver
 ```
 
-## Strategies
+## Usage 
 
-Currently there is only one Strategy available, DefaultCallableStrategy.
+The following resolvers are made available by this library.
 
-In short the DefaultCallableStrategy resolves the following inputs to the associated callable. This works for static and non-static methods as well and it relies heavily for a Container to be provided at the selected Strategy.
+* `CallableResolver`
+* `FilenameResolver`
+
+## Usage: CallableResolver
+
+It is possible to resolve the following inputs to the associated callable as it is demonstrated below. This works for static and non-static methods as well and it relies heavily for a Container to be provided.
 
 * `App\GreetingController::helloAction` to `[instance of App\GreetingController, 'helloAction']`
 * `::helloAction` to `[instance of calling class, 'helloAction']`
 * `parent::helloAction` to `[parent instance of calling class, 'helloAction']`
 * `App\SomeClass::someStaticMethod` to `['App\SomeClass', 'someStaticMethod']`
-
-## Usage: Callable
 
 ### Resolve a non - static method
 
@@ -37,8 +40,7 @@ use Softius\ResourcesResolver\CallableResolver;
 $container = new Container();
 $container->add('App\SomeClass');
 
-$resolver = new CallableResolver();
-$resolver->setStrategy(new DefaultCallableStrategy($container));
+$resolver = new CallableResolver($container);
 
 $callable = $resolver->resolve('App\SomeClass::someMethod');;
 ```
@@ -53,8 +55,7 @@ use Softius\ResourcesResolver\CallableResolver;
 $container = new Container();
 $container->add('FooClass', 'App\SomeClass');
 
-$resolver = new CallableResolver();
-$resolver->setStrategy(new DefaultCallableStrategy($container));
+$resolver = new CallableResolver($container);
 
 $callable = $resolver->resolve('FooClass::someMethod');;
 ```
@@ -99,7 +100,7 @@ class B extends A
 }
 ```
 
-## Usage: Filename
+## Usage: FilenameResolver
 
 ### Resolve a filename from templates directory
 
