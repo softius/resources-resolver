@@ -66,7 +66,7 @@ class CallableResolver implements ResolvableInterface
      */
     public function setMode($mode)
     {
-        $this->modes = $modes;
+        $this->modes = $mode;
     }
 
     /**
