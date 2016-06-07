@@ -11,6 +11,9 @@ class CallableResolver implements ResolvableInterface
 {
     const DEFAULT_METHOD_SEPARATOR = '::';
 
+    const MODE_STRICT = 0b0001;
+    const MODE_LAZYLOAD = 0b0010;
+
     /**
      * @var ContainerInterface
      */
@@ -22,6 +25,11 @@ class CallableResolver implements ResolvableInterface
     private $method_separator;
 
     /**
+     * @var int
+     */
+    private $modes;
+
+    /**
      * DefaultCallableStrategy constructor.
      *
      * @param \Interop\Container\ContainerInterface $container
@@ -31,6 +39,7 @@ class CallableResolver implements ResolvableInterface
     {
         $this->container = $container;
         $this->method_separator = ($method_separator === null) ? self::DEFAULT_METHOD_SEPARATOR : $method_separator;
+        $this->modes = 0;
     }
 
     /**
@@ -41,8 +50,8 @@ class CallableResolver implements ResolvableInterface
     {
         // Use backtrace to find the calling Class
         if (empty($class) || $class === 'parent' || $class === 'self') {
-            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-            $class = ($class === 'parent') ? get_parent_class($trace[2]['class']) : $trace[2]['class'];
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+            $class = ($class === 'parent') ? get_parent_class($trace[3]['class']) : $trace[3]['class'];
         }
 
         if ($this->container !== null && $this->container->has($class)) {
@@ -53,13 +62,52 @@ class CallableResolver implements ResolvableInterface
     }
 
     /**
+     * @param int $mode
+     */
+    public function setMode($mode)
+    {
+        $this->modes = $modes;
+    }
+
+    /**
+     * @param int $mode
+     * @return boolean
+     */
+    public function isMode($mode)
+    {
+        return ($this->modes & $mode);
+    }
+
+    /**
+     * @param string $in
+     * @return array|\Closure
+     * @throws \Exception
+     */
+    public function resolve($in)
+    {
+        if ($this->isMode(self::MODE_STRICT) && $this->isMode(self::MODE_LAZYLOAD)) {
+            return function() use ($in) {
+                return $this->resolveStrict($in);
+            };
+        } elseif ($this->isMode(self::MODE_STRICT)) {
+            return $this->resolveStrict($in);
+        } elseif ($this->isMode(self::MODE_LAZYLOAD)) {
+            return function() use ($in) {
+                return $this->resolveCallable($in);
+            };
+        } else {
+            return $this->resolveCallable($in);
+        }
+    }
+
+    /**
      * @param string $in
      *
      * @return array
      *
      * @throws \Exception
      */
-    public function resolve($in)
+    protected function resolveCallable($in)
     {
         $pos = strrpos($in, $this->method_separator);
         if ($pos === false) {
@@ -80,9 +128,9 @@ class CallableResolver implements ResolvableInterface
      *
      * @throws \Exception
      */
-    public function resolveSafe($in)
+    protected function resolveStrict($in)
     {
-        $callable = $this->resolve($in);
+        $callable = $this->resolveCallable($in);
         if (is_callable($callable)) {
             return $callable;
         }
