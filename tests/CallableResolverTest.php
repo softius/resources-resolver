@@ -10,7 +10,7 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
 {
     public function testResolvesFromFull()
     {
-        $resolver = new CallableResolver;
+        $resolver = new CallableResolver();
         $callable = $resolver->resolve('Greeting::action');
         $this->assertEquals($callable, ['Greeting', 'action']);
         $this->assertTrue(is_callable($callable, true));
@@ -18,7 +18,7 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
 
     public function testResolvesSelf()
     {
-        $resolver = new CallableResolver;
+        $resolver = new CallableResolver();
         $callable = $resolver->resolve('::action');
         $this->assertEquals($callable, [__CLASS__, 'action']);
         $this->assertTrue(is_callable($callable, true));
@@ -30,7 +30,7 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
 
     public function testResolvesFromParent()
     {
-        $resolver = new CallableResolver;
+        $resolver = new CallableResolver();
         $callable = $resolver->resolve('parent::action');
         $this->assertEquals($callable, [get_parent_class(__CLASS__), 'action']);
         $this->assertTrue(is_callable($callable, true));
@@ -43,13 +43,12 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
         $resolver->resolve('!this!fails!');
     }
 
-    public function testModifiedStrategy()
+    public function testConstructorArguments()
     {
         $container = new Container();
         $container->add('Resource/SomeClass', 'Softius\ResourcesResolver\Test\Resource\SomeClass');
 
-        $resolver = new CallableResolver;
-        $resolver->setStrategy(new DefaultCallableStrategy($container, '#'));
+        $resolver = new CallableResolver($container, '#');
 
         $callable = $resolver->resolve('#action');
         $this->assertEquals($callable, [__CLASS__, 'action']);
@@ -60,31 +59,54 @@ class CallableResolverTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(is_callable($callable, true));
     }
 
-    public function testSafeStaticMethods()
+    public function testStrictStaticMethods()
     {
-        $resolver = new CallableResolver;
+        $resolver = new CallableResolver();
+        $resolver->setMode(CallableResolver::MODE_STRICT);
 
-        $callable = $resolver->resolveSafe('Softius\ResourcesResolver\Test\Resource\SomeClass::someStaticMethod');
+        $callable = $resolver->resolve('Softius\ResourcesResolver\Test\Resource\SomeClass::someStaticMethod');
         $this->assertTrue(is_callable($callable));
         $this->assertEquals($callable, ['Softius\ResourcesResolver\Test\Resource\SomeClass', 'someStaticMethod']);
     }
 
-    public function testSafeNonStaticMethods()
+    public function testStrictNonStaticMethods()
     {
         $container = new Container();
         $container->add('SomeClass', 'Softius\ResourcesResolver\Test\Resource\SomeClass');
 
-        $resolver = new CallableResolver;
-        $resolver->setStrategy(new DefaultCallableStrategy($container));
+        $resolver = new CallableResolver($container);
+        $resolver->setMode(CallableResolver::MODE_STRICT);
 
-        $callable = $resolver->resolveSafe('SomeClass::someStaticMethod');
+        $callable = $resolver->resolve('SomeClass::someStaticMethod');
         $this->assertTrue(is_callable($callable));
+    }
+
+    public function testLazyLoadStaticMethods()
+    {
+        $resolver = new CallableResolver();
+        $resolver->setMode(CallableResolver::MODE_LAZYLOAD);
+        $lazy_load = $resolver->resolve('Greeting::action');
+        $callable = $lazy_load();
+        $this->assertEquals($callable, ['Greeting', 'action']);
+        $this->assertTrue(is_callable($callable, true));
+    }
+
+    public function testStrictLazyLoadStaticMethods()
+    {
+        $resolver = new CallableResolver();
+        $resolver->setMode(CallableResolver::MODE_LAZYLOAD | CallableResolver::MODE_STRICT);
+
+        $lazy_load = $resolver->resolve('Softius\ResourcesResolver\Test\Resource\SomeClass::someStaticMethod');
+        $callable = $lazy_load();
+        $this->assertTrue(is_callable($callable));
+        $this->assertEquals($callable, ['Softius\ResourcesResolver\Test\Resource\SomeClass', 'someStaticMethod']);
     }
 
     public function testThrowsExceptionForInvalidMethods()
     {
         $resolver = new CallableResolver;
+        $resolver->setMode(CallableResolver::MODE_STRICT);
         $this->setExpectedException('Exception');
-        $resolver->resolveSafe('Softius\ResourcesResolver\Test\Resource\SomeClass::doesNotExist');
+        $resolver->resolve('Softius\ResourcesResolver\Test\Resource\SomeClass::doesNotExist');
     }
 }
